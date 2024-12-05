@@ -1,7 +1,11 @@
 @import '~bootstrap/scss/bootstrap';
 
-@import 'form';
+@import 'list';
 
 body {
     background-color: #c1c1cc;
+}
+
+nav {
+    background-color: cyan;
 }
