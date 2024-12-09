@@ -137,6 +137,18 @@ app.post('/update/:id', (req, res) => {
 
 });
 
+app.get('/delete/:id', (req, res) => {
+
+    const file = top + fs.readFileSync('./html/delete.html', 'utf8') + bottom;
+    const template = handlebars.compile(file);
+    const data = {
+        pageTitle: 'Trynimo patvirtinimas',
+        domain: domain
+    };
+    const html = template(data);
+    res.send(html);
+});
+
 // const Handlebars = require("handlebars");
 // const template = Handlebars.compile("Name: {{name}}");
 // console.log(template({ name: "Nils" }));
