@@ -35,7 +35,13 @@ const getMessages = msg => {
 
 // MIDDLEWARE
 
-
+const cookiesManager = (req, res, next) => {
+    const visits = req.cookies.visits || 0;
+    res.cookie('visits', parseInt(visits) + 1, { maxAge: 1000 * 60 * 60 * 24 * 365 });
+    next();
+  }
+   
+  app.use(cookiesManager);
 
 // ROUTES
 
