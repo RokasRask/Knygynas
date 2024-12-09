@@ -20,6 +20,7 @@ const bottom = fs.readFileSync('./html/bottom.html', 'utf8');
 const messages = {
     create_success: { msg: 'Knyga sėkmingai sukurta!', type: 'success' },
     edit_success: { msg: 'Knyga sėkmingai atnaujinta!', type: 'success' },
+    delete_success: { msg: 'Knyga sėkmingai ištrinta!', type: 'success' },
 
 };
 
@@ -138,12 +139,79 @@ app.post('/update/:id', (req, res) => {
 });
 
 app.get('/delete/:id', (req, res) => {
-
+ 
     const file = top + fs.readFileSync('./html/delete.html', 'utf8') + bottom;
     const template = handlebars.compile(file);
+   
+    let books = fs.readFileSync('./data/books.json', 'utf8');
+    books = JSON.parse(books);
+    const id = req.params.id;
+   
+    const book = books.find(book => book.id === id);
+   
+    // validation
+    if (!book) {
+      res.status(404).send('Tokios knygos nėra');
+      return;
+    }
+   
+   
     const data = {
-        pageTitle: 'Trynimo patvirtinimas',
-        domain: domain
+      pageTitle: 'Trynimo patvirtinimas',
+      domain: domain,
+      ...book
+    };
+    const html = template(data);
+    res.send(html);
+   
+  });
+
+app.post('/destroy/:id', (req, res) => {
+
+    let books = fs.readFileSync('./data/books.json', 'utf8');
+    books = JSON.parse(books);
+    const id = req.params.id;
+
+    const oldBook = books.find(book => book.id === id);
+
+    // validation
+    if (!oldBook) {
+        res.status(404).send('Tokios knygos nėra');
+        return;
+    }
+
+    books = books.filter(book => book.id !== id);
+
+    books = JSON.stringify(books);
+    fs.writeFileSync('./data/books.json', books);
+
+    res.status(302).redirect(domain + '?msg=delete_success');
+
+
+});
+
+app.get('/show/:id', (req, res) => {
+
+    const file = top + fs.readFileSync('./html/show.html', 'utf8') + bottom;
+    const template = handlebars.compile(file);
+
+    let books = fs.readFileSync('./data/books.json', 'utf8');
+    books = JSON.parse(books);
+    const id = req.params.id;
+
+    const book = books.find(book => book.id === id);
+
+    // validation
+
+    if (!book) {
+        res.status(404).send('Tokios knygos nėra');
+        return;
+    }
+
+    const data = {
+        pageTitle: `Rodyti knygą ${book.title}`,
+        domain: domain,
+        ...book
     };
     const html = template(data);
     res.send(html);
