@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
 const handlebars = require("handlebars");
 const fs = require('node:fs');
@@ -11,6 +12,7 @@ const domain = 'http://books.final/';
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const top = fs.readFileSync('./html/top.html', 'utf8');
 const bottom = fs.readFileSync('./html/bottom.html', 'utf8');
@@ -21,7 +23,7 @@ const messages = {
     create_success: { msg: 'Knyga sėkmingai sukurta!', type: 'success' },
     edit_success: { msg: 'Knyga sėkmingai atnaujinta!', type: 'success' },
     delete_success: { msg: 'Knyga sėkmingai ištrinta!', type: 'success' },
-
+    validation_error: { msg: 'Užpildykite visus laukus!', type: 'danger' }
 };
 
 const getMessages = msg => {
@@ -30,6 +32,10 @@ const getMessages = msg => {
     if (!message) return null;
     return message;
 }
+
+// MIDDLEWARE
+
+
 
 // ROUTES
 
@@ -55,9 +61,9 @@ app.get('/create', (req, res) => {
     const file = top + fs.readFileSync('./html/create.html', 'utf8') + bottom;
     const template = handlebars.compile(file);
     const data = {
-        manoKintamasis: 'Labas',
         pageTitle: 'Nauja knyga',
-        domain: domain
+        domain: domain,
+        message: getMessages(req.query.msg)
     };
     const html = template(data);
     res.send(html);
@@ -95,6 +101,11 @@ app.post('/store', (req, res) => {
     const id = uuidv4();
 
     // need validation
+
+    if (!title || !author || !year || !genre || !isbn || !pages) {
+        res.status(422).redirect(domain + 'create?msg=validation_error');
+        return;
+    }
 
     const book = { id, title, author, year, genre, isbn, pages };
 
@@ -139,32 +150,32 @@ app.post('/update/:id', (req, res) => {
 });
 
 app.get('/delete/:id', (req, res) => {
- 
+
     const file = top + fs.readFileSync('./html/delete.html', 'utf8') + bottom;
     const template = handlebars.compile(file);
-   
+
     let books = fs.readFileSync('./data/books.json', 'utf8');
     books = JSON.parse(books);
     const id = req.params.id;
-   
+
     const book = books.find(book => book.id === id);
-   
+
     // validation
     if (!book) {
-      res.status(404).send('Tokios knygos nėra');
-      return;
+        res.status(404).send('Tokios knygos nėra');
+        return;
     }
-   
-   
+
+
     const data = {
-      pageTitle: 'Trynimo patvirtinimas',
-      domain: domain,
-      ...book
+        pageTitle: 'Trynimo patvirtinimas',
+        domain: domain,
+        ...book
     };
     const html = template(data);
     res.send(html);
-   
-  });
+
+});
 
 app.post('/destroy/:id', (req, res) => {
 
