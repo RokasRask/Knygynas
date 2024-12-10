@@ -36,19 +36,23 @@ const getMessages = msg => {
 // MIDDLEWARE
 
 const cookiesManager = (req, res, next) => {
+
     let session = req.cookies.session || '';
     let sessionData = fs.readFileSync('./data/session.json', 'utf8');
     sessionData = JSON.parse(sessionData);
-    if (session && sessionData[session]) {
-        req.session = sessionData[session];
+    const findSession = sessionData.find(session => session.id === session);
+    if (session && findSession) {
+        req.session = findSession;
     } else {
         req.session = {};
         session = uuidv4();
-        sessionData[session] = req.session;
+        sessionData.push({ id: session, data: {} });
         sessionData = JSON.stringify(sessionData);
         fs.writeFileSync('./data/session.json', sessionData);
     }
     res.cookie('session', session, { maxAge: 1000 * 60 * 60 * 24 * 365 });
+
+    next();
 }
 
 app.use(cookiesManager);
