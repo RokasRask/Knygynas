@@ -33,6 +33,15 @@ const getMessages = msg => {
     return message;
 }
 
+const addToSession = (req, key, value) => {
+    req.session.data[key] = value;
+    const sessionData = fs.readFileSync('./data/session.json', 'utf8');
+    const sessions = JSON.parse(sessionData);
+    const session = sessions.find(s => s.id === req.session.id);
+    session.data = req.session.data;
+    fs.writeFileSync('./data/session.json', JSON.stringify(sessions));
+  }
+
 // MIDDLEWARE
 
 const cookiesManager = (req, res, next) => {
@@ -40,7 +49,7 @@ const cookiesManager = (req, res, next) => {
     let session = req.cookies.session || '';
     let sessionData = fs.readFileSync('./data/session.json', 'utf8');
     sessionData = JSON.parse(sessionData);
-    const findSession = sessionData.find(session => session.id === session);
+    const findSession = sessionData.find(s => s.id === session);
     if (session && findSession) {
         req.session = findSession;
     } else {
@@ -54,6 +63,7 @@ const cookiesManager = (req, res, next) => {
 
     next();
 }
+
 
 app.use(cookiesManager);
 
