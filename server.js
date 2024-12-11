@@ -26,8 +26,10 @@ const messages = {
   validation_error: { msg: 'Užpildykite visus laukus!', type: 'danger' }
 };
 
-const getMessages = msg => {
-  if (!msg) return null;
+const getMessages = req => {
+  if (!req.session.data.msg) return null;
+  const msg = req.session.data.msg;
+  removeFromSession(req, 'msg');
   const message = messages[msg];
   if (!message) return null;
   return message;
@@ -38,6 +40,14 @@ const addToSession = (req, key, value) => {
   const sessions = JSON.parse(sessionData);
   const session = sessions.find(s => s.id === req.session.id);
   session.data[key] = value;
+  fs.writeFileSync('./data/session.json', JSON.stringify(sessions));
+}
+
+const removeFromSession = (req, key) => {
+  const sessionData = fs.readFileSync('./data/session.json', 'utf8');
+  const sessions = JSON.parse(sessionData);
+  const session = sessions.find(s => s.id === req.session.id);
+  delete session.data[key];
   fs.writeFileSync('./data/session.json', JSON.stringify(sessions));
 }
 
@@ -59,7 +69,6 @@ const sessionManager = (req, res, next) => {
     fs.writeFileSync('./data/session.json', sessionData);
   }
   res.cookie('session', sessionId, { maxAge: 1000 * 60 * 60 * 24 });
-  
   next();
 }
 
@@ -73,7 +82,6 @@ const oldDataManager = (req, res, next) => {
   }
   next(); 
 }
-
 app.use(sessionManager);
 app.use(oldDataManager);
 
@@ -84,34 +92,30 @@ app.get('/', (req, res) => {
 
   let books = fs.readFileSync('./data/books.json', 'utf8');
   books = JSON.parse(books);
-
   const file = top + fs.readFileSync('./html/read.html', 'utf8') + bottom;
   const template = handlebars.compile(file);
   const data = {
     pageTitle: 'Knygų sąrašas',
     domain,
     books,
-    message: getMessages(req.query.msg)
+    message: getMessages(req)
   };
   const html = template(data);
   res.send(html);
-
 });
 
 
 app.get('/create', (req, res) => {
-
   const file = top + fs.readFileSync('./html/create.html', 'utf8') + bottom;
   const template = handlebars.compile(file);
   const data = {
     pageTitle: 'Nauja knyga',
     domain: domain,
-    message: getMessages(req.query.msg),
+    message: getMessages(req),
     oldData: req.session.data.oldData || {}
   };
   const html = template(data);
   res.send(html);
-
 });
 
 app.get('/edit/:id', (req, res) => {
@@ -134,7 +138,9 @@ app.get('/edit/:id', (req, res) => {
   const data = {
     pageTitle: `Redaguoti knygą ${book.title}`,
     domain: domain,
-    ...book
+    ...book,
+    message: getMessages(req),
+    oldData: req.session.data.oldData || {}
   };
   const html = template(data);
   res.send(html);
@@ -203,35 +209,21 @@ app.post('/store', (req, res) => {
   // need validation
 
   if (!title || !author || !year || !genre || !isbn || !pages) {
-    res.status(422).redirect(domain + 'create?msg=validation_error');
+    addToSession(req, 'msg', 'validation_error');
+    res.status(422).redirect(domain + 'create');
     return;
   }
-
-
-
-
-
-
-
-
   const book = { id, title, author, year, genre, isbn, pages };
-
   let data = fs.readFileSync('./data/books.json', 'utf8');
   data = JSON.parse(data);
   data.push(book);
   data = JSON.stringify(data);
   fs.writeFileSync('./data/books.json', data);
-
+  addToSession(req, 'msg', 'create_success');
   res.status(302).redirect(domain + '?msg=create_success');
-
-
 });
 
 app.post('/update/:id', (req, res) => {
-
-  const { title, author, year, genre, isbn, pages } = req.body;
-
-  // need validation
 
   let books = fs.readFileSync('./data/books.json', 'utf8');
   books = JSON.parse(books);
@@ -239,9 +231,16 @@ app.post('/update/:id', (req, res) => {
 
   const oldBook = books.find(book => book.id === id);
 
-  // validation
+  // page exists
   if (!oldBook) {
     res.status(404).send('Tokios knygos nėra');
+    return;
+  }
+
+  const { title, author, year, genre, isbn, pages } = req.body;
+  if (!title || !author || !year || !genre || !isbn || !pages) {
+    addToSession(req, 'msg', 'validation_error');
+    res.status(422).redirect(domain + 'edit' + id);
     return;
   }
 
@@ -249,13 +248,10 @@ app.post('/update/:id', (req, res) => {
 
   books = books.map(book => book.id === id ? newBook : book);
 
-
-
-
   books = JSON.stringify(books);
   fs.writeFileSync('./data/books.json', books);
-
-  res.status(302).redirect(domain + '?msg=edit_success');
+  addToSession(req, 'msg', 'edit_success');
+  res.status(302).redirect(domain);
 
 
 });
