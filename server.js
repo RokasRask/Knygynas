@@ -55,6 +55,19 @@ const removeFromSession = (req, key) => {
   fs.writeFileSync('./data/session.json', JSON.stringify(sessions));
 }
 
+const show404 = res => {
+  const file = top + fs.readFileSync('./html/404.html', 'utf8') + bottom;
+  const template = handlebars.compile(file);
+  const data = {
+    pageTitle: 'Puslapis nerastas',
+    domain,
+    message: null,
+    nomenu: true
+  };
+  const html = template(data);
+  res.status(404).send(html);
+}
+
 // MIDDLEWARE
 
 const sessionManager = (req, res, next) => {
@@ -75,7 +88,6 @@ const sessionManager = (req, res, next) => {
   res.cookie('session', sessionId, { maxAge: 1000 * 60 * 60 * 24 });
   next();
 }
-
 
 const oldDataManager = (req, res, next) => {
   const requestMethod = req.method;
@@ -135,7 +147,7 @@ app.get('/edit/:id', (req, res) => {
 
   // validation
   if (!book) {
-    res.status(404).send('Tokios knygos nėra');
+    show404(res);
     return;
   }
 
@@ -198,7 +210,8 @@ app.get('/delete/:id', (req, res) => {
   const data = {
     pageTitle: 'Trynimo patvirtinimas',
     domain: domain,
-    ...book
+    ...book,
+    nomenu: true
   };
   const html = template(data);
   res.send(html);
@@ -274,13 +287,11 @@ app.post('/destroy/:id', (req, res) => {
     res.status(404).send('Tokios knygos nėra');
     return;
   }
-
   books = books.filter(book => book.id !== id);
-
   books = JSON.stringify(books);
   fs.writeFileSync('./data/books.json', books);
-
-  res.status(302).redirect(domain + '?msg=delete_success');
+  addToSession(req, 'msg', 'delete_success');
+  res.status(302).redirect(domain);
 });
 
 
