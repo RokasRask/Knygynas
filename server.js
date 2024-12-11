@@ -7,6 +7,10 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const port = 80;
 
+handlebars.registerHelper('isdefined', function (value) {
+  return value !== undefined;
+});
+
 const domain = 'http://books.final/';
 
 app.use(express.static('public'));
@@ -240,7 +244,7 @@ app.post('/update/:id', (req, res) => {
   const { title, author, year, genre, isbn, pages } = req.body;
   if (!title || !author || !year || !genre || !isbn || !pages) {
     addToSession(req, 'msg', 'validation_error');
-    res.status(422).redirect(domain + 'edit' + id);
+    res.status(422).redirect(domain + 'edit/' + id);
     return;
   }
 
