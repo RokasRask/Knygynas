@@ -1,43 +1,40 @@
-<section>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-7">
-                <div class="card mt-5">
-                    <h2 class="card-header">Redaguoti knygą</h2>
-                    <div class="card-body">
-                        <h5 class="card-title">Redaguokite knygą "{{title}}"</h5>
-                        <form action="{{domain}}update/{{id}}" method="post">
-                            <div class="mb-3">
-                                <label class="form-label">Pavadinimas</label>
-                                <input type="text" class="form-control" name="title" value="{{#if (isdefined oldData.title)}}{{oldData.title}}{{else}}{{title}}{{/if}}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Autorius</label>
-                                <input type="text" class="form-control" name="author" value="{{#if (isdefined oldData.author)}}{{oldData.author}}{{else}}{{author}}{{/if}}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Leidimo metai</label>
-                                <input type="text" class="form-control" name="year" value="{{#if (isdefined oldData.year)}}{{oldData.year}}{{else}}{{year}}{{/if}}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Žanras</label>
-                                <input type="text" class="form-control" name="genre" value="{{#if (isdefined oldData.genre)}}{{oldData.genre}}{{else}}{{genre}}{{/if}}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">ISBN</label>
-                                <input type="text" class="form-control" name="isbn" value="{{#if (isdefined oldData.isbn)}}{{oldData.isbn}}{{else}}{{isbn}}{{/if}}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Puslapiai</label>
-                                <input type="text" class="form-control" name="pages" value="{{#if (isdefined oldData.pages)}}{{oldData.pages}}{{else}}{{pages}}{{/if}}">
-                            </div>
-                            <button type="submit" class="btn btn-outline-primary">Išsaugoti</button>
-                            <a href="{{domain}}" class="btn btn-outline-secondary">Atšaukti</a>
-                        </form>
-                        
-                    </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-7">
+            <div class="card mt-5">
+                <h2 class="card-header">Redaguoti knygą</h2>
+                <div class="card-body">
+                    <h5 class="card-title">Redaguokite knygą "{{title}}"</h5>
+                    <form action="{{domain}}update/{{id}}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label">Pavadinimas</label>
+                            <input type="text" class="form-control" name="title" value="{{#if (isdefined oldData.title)}}{{oldData.title}}{{else}}{{title}}{{/if}}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Autorius</label>
+                            <input type="text" class="form-control" name="author" value="{{#if (isdefined oldData.author)}}{{oldData.author}}{{else}}{{author}}{{/if}}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Leidimo metai</label>
+                            <input type="text" class="form-control" name="year" value="{{#if (isdefined oldData.year)}}{{oldData.year}}{{else}}{{year}}{{/if}}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Žanras</label>
+                            <input type="text" class="form-control" name="genre" value="{{#if (isdefined oldData.genre)}}{{oldData.genre}}{{else}}{{genre}}{{/if}}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ISBN</label>
+                            <input type="text" class="form-control" name="isbn" value="{{#if (isdefined oldData.isbn)}}{{oldData.isbn}}{{else}}{{isbn}}{{/if}}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Puslapiai</label>
+                            <input type="text" class="form-control" name="pages" value="{{#if (isdefined oldData.pages)}}{{oldData.pages}}{{else}}{{pages}}{{/if}}">
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary">Išsaugoti</button>
+                        <a href="{{domain}}" class="btn btn-outline-secondary">Atšaukti</a>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
-</section>
+</div>

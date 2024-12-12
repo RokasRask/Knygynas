@@ -1,29 +1,27 @@
-<section>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-10">
-                <div class="card mt-5">
-                    <h2 class="card-header">Knygų sąrašas</h2>
-                    <div class="card-body">
-                        <h5 class="card-title">Pridėkite naują knygą</h5>
-                        <ul class="list-group">
-                            {{#books}}
-                            <li class="list-group-item books">
-                                <div class="book">
-                                    <div class="title">{{title}}</div>
-                                    <div class="author">{{author}}</div>
-                                </div>
-                                <div class="buttons">
-                                    <a href="{{domain}}show/{{id}}" class="btn btn-outline-primary">Peržiūrėti</a>
-                                    <a href="{{domain}}edit/{{id}}" class="btn btn-outline-secondary">Redaguoti</a>
-                                    <a href="{{domain}}delete/{{id}}" class="btn btn-outline-danger">Ištrinti</a>
-                                </div>
-                            </li>
-                            {{/books}}
-                          </ul>
-                    </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-10">
+            <div class="card mt-5">
+                <h2 class="card-header">Knygų sąrašas</h2>
+                <div class="card-body">
+                    <h5 class="card-title"></h5>
+                    <ul class="list-group">
+                        {{#books}}
+                        <li class="list-group-item books">
+                            <div class="book">
+                                <div class="title" style="user-select: none;">{{title}}</div>
+                                <div class="author">{{author}}</div>
+                            </div>
+                            <div class="buttons">
+                                <a href="{{domain}}show/{{id}}" class="btn btn-outline-primary">Peržiūrėti</a>
+                                <a href="{{domain}}edit/{{id}}" class="btn btn-outline-secondary">Redaguoti</a>
+                                <a href="{{domain}}delete/{{id}}" class="btn btn-outline-danger">Ištrinti</a>
+                            </div> 
+                        </li>
+                        {{/books}}
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
-</section>
+</div>
