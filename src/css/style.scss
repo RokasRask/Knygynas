@@ -17,3 +17,12 @@ nav {
 .mid {
     font-size: 40px;
 }
+
+.card-body form.sort {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 40px;
+    select {
+        width: 300px;
+    }
+}
