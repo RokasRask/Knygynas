@@ -11,6 +11,7 @@
                             <option value="title_az" {{#if (isdefined sortBy.title_az)}} selected {{/if}}>Pavadinimas A-Z</option>
                             <option value="title_za" {{#if (isdefined sortBy.title_za)}} selected {{/if}}>Pavadinimas Z-A</option>
                             <option value="author_az" {{#if (isdefined sortBy.author_az)}} selected {{/if}}>Autorius A-Z</option>
+                            <!-- option value="author_az" selected >Autorius A-Z</option> -->
                             <option value="author_za" {{#if (isdefined sortBy.author_za)}} selected {{/if}}>Autorius Z-A</option>
                         </select>
                         <button type="submit" class="btn btn-outline-primary">Rūšiuoti</button>
@@ -20,6 +21,13 @@
                         {{#books}}
                         <li class="list-group-item books">
                             <div class="book">
+                                <div class="cover">
+                                    {{#if cover}}
+                                    <img src="{{domain}}images/{{cover}}" alt="{{title}}">
+                                    {{else}}
+                                    <img src="{{domain}}images/noImg.jpg" alt="{{title}}">
+                                    {{/if}}
+                                </div>
                                 <div class="title" style="user-select: none;">{{title}}</div>
                                 <div class="author">{{author}}</div>
                             </div>
