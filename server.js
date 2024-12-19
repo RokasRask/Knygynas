@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const handlebars = require('handlebars');
+const md5 = require('md5');
 const multer = require('multer');
 const fs = require('node:fs');
 const { v4: uuidv4 } = require('uuid');
@@ -24,7 +25,6 @@ const storage = multer.diskStorage({
 });
 
 
-
 const port = 80;
 const domain = 'http://books.final/';
 const top = fs.readFileSync('./html/top.html', 'utf8');
@@ -33,12 +33,38 @@ const messages = {
   create_success: { msg: 'Knyga sėkmingai sukurta!', type: 'success' },
   edit_success: { msg: 'Knyga sėkmingai atnaujinta!', type: 'success' },
   delete_success: { msg: 'Knyga sėkmingai ištrinta!', type: 'success' },
-  validation_error: { msg: 'Užpildykite visus laukus!', type: 'danger' }
+  validation_error: { msg: 'Užpildykite visus laukus!', type: 'danger' },
+  file_error: { msg: 'Netinkamas paveikslėlio formatas. Palaikomi formatai: jpeg, png', type: 'danger' },
+  login_error: { msg: 'Neteisingi prisijungimo duomenys!', type: 'danger' },
+  login_ok: { msg: 'Sėkmingai prisijungta!', type: 'success' },
+  logout_ok: { msg: 'Sėkmingai atsijungta!', type: 'success' }
 };
 
 // MIDDLEWARE
 
-const upload = multer({ storage });
+const auth = (req, res, next) => {
+  if (req.url === '/login' || req.url === '/') {
+    return next();
+  }
+  if (!req.session.data.user) {
+    res.status(401).redirect(domain + 'login');
+    return;
+  }
+  next();
+}
+
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+      cb(null, true);
+    } else {
+      cb(null, false);
+      req.fileValidationError = true;
+    }
+  }
+});
 
 const sessionManager = (req, res, next) => {
   let sessionId = req.cookies.session || '';
@@ -72,8 +98,9 @@ const oldDataManager = (req, res, next) => {
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-
+app.use(upload.single('cover'));
 app.use(sessionManager);
+app.use(auth);
 app.use(oldDataManager);
 
 
@@ -117,7 +144,7 @@ const show404 = res => {
   res.status(404).send(html);
 }
 
-// ROUTES
+// ROUTER
 
 app.get('/', (req, res) => {
   // sort
@@ -152,8 +179,11 @@ app.get('/', (req, res) => {
     domain,
     books,
     message: getMessages(req),
-    sortBy: {[sortBy]: true}
+    sortBy: { [sortBy]: true },
+    user: req.session.data?.user || 'Svetimas (Alien)', // jei nera user, tai svetimas
+    loggedIn: req.session.data?.user ? true : false
   };
+
 
   /*
   const data = {};
@@ -174,7 +204,9 @@ app.get('/create', (req, res) => {
     pageTitle: 'Nauja knyga',
     domain: domain,
     message: getMessages(req),
-    oldData: req.session.data.oldData || {}
+    oldData: req.session.data.oldData || {},
+    user: req.session.data?.user || 'Svetimas (Alien)',
+    loggedIn: req.session.data?.user ? true : false
   };
   const html = template(data);
   res.send(html);
@@ -196,7 +228,9 @@ app.get('/edit/:id', (req, res) => {
     domain: domain,
     ...book,
     message: getMessages(req),
-    oldData: req.session.data.oldData || {}
+    oldData: req.session.data.oldData || {},
+    user: req.session.data?.user || 'Svetimas (Alien)',
+    loggedIn: req.session.data?.user ? true : false
   };
   const html = template(data);
   res.send(html);
@@ -216,7 +250,10 @@ app.get('/show/:id', (req, res) => {
   const data = {
     pageTitle: `Rodyti knygą ${book.title}`,
     domain: domain,
-    ...book
+    ...book,
+    user: req.session.data?.user || 'Svetimas (Alien)',
+    loggedIn: req.session.data?.user ? true : false
+    
   };
   const html = template(data);
   res.send(html);
@@ -237,21 +274,34 @@ app.get('/delete/:id', (req, res) => {
     pageTitle: 'Trynimo patvirtinimas',
     domain: domain,
     ...book,
-    nomenu: true
+    nomenu: true,
+    user: req.session.data?.user || 'Svetimas (Alien)',
+    loggedIn: req.session.data?.user ? true : false
   };
   const html = template(data);
   res.send(html);
 });
 
-app.post('/store', upload.single('cover'), (req, res) => {
+
+
+app.post('/store', (req, res) => {
   const { title, author, year, genre, isbn, pages } = req.body;
+  const uploadFileName = req.file?.filename; // req.file egzistuoja tik jei yra failas
   const id = uuidv4();
   if (!title || !author || !year || !genre || !isbn || !pages) {
+    if (uploadFileName) {
+      fs.existsSync(`public/images/${uploadFileName}`) &&
+        fs.unlinkSync(`public/images/${uploadFileName}`); // delete uploaded file
+    }
     addToSession(req, 'msg', 'validation_error');
     res.status(422).redirect(domain + 'create');
     return;
   }
-  const uploadFileName = req.file?.filename; // req.file egzistuoja tik jei yra failas
+  if (req.fileValidationError) {
+    addToSession(req, 'msg', 'file_error');
+    res.status(422).redirect(domain + 'create');
+    return;
+  }
 
   const book = { id, title, author, year, genre, isbn, pages, cover: uploadFileName };
   let data = fs.readFileSync('./data/books.json', 'utf8');
@@ -269,17 +319,27 @@ app.post('/update/:id', (req, res) => {
   const id = req.params.id;
   const oldBook = books.find(book => book.id === id);
   if (!oldBook) {
+    console.log('testuotojai patenka čia :)');
     show404(res);
     return;
   }
   const { title, author, year, genre, isbn, pages } = req.body;
+  const uploadFileName = req.file?.filename;
   if (!title || !author || !year || !genre || !isbn || !pages) {
+    if (uploadFileName) {
+      fs.existsSync(`public/images/${uploadFileName}`) &&
+        fs.unlinkSync(`public/images/${uploadFileName}`); // delete uploaded file
+    }
     addToSession(req, 'msg', 'validation_error');
     res.status(422).redirect(domain + 'edit/' + id);
     return;
   }
-
-  const uploadFileName = req.file?.filename;
+  if (req.fileValidationError) {
+    addToSession(req, 'msg', 'file_error');
+    res.status(422).redirect(domain + 'edit/' + id);
+    return;
+  }
+  
   let cover;
 
   if (!uploadFileName) {
@@ -288,13 +348,14 @@ app.post('/update/:id', (req, res) => {
     cover = uploadFileName;
   }
 
-  
-  if (req.body.delete_cover) {
+  if (req.body.delete_cover && !uploadFileName) {
     cover = undefined; // delete cover entry
   }
 
   if (req.body.delete_cover || uploadFileName) {
-    fs.unlinkSync(`public/images/${oldBook.cover}`); // delete old file
+    // if exists, delete old file
+    fs.existsSync(`public/images/${oldBook.cover}`) &&
+      fs.unlinkSync(`public/images/${oldBook.cover}`); // delete old file
   }
 
 
@@ -315,12 +376,62 @@ app.post('/destroy/:id', (req, res) => {
     show404(res);
     return;
   }
+
+  if (oldBook.cover) {
+    fs.existsSync(`public/images/${oldBook.cover}`) &&
+      fs.unlinkSync(`public/images/${oldBook.cover}`); // delete old file
+  }
+
   books = books.filter(book => book.id !== id);
   books = JSON.stringify(books);
   fs.writeFileSync('./data/books.json', books);
   addToSession(req, 'msg', 'delete_success');
   res.status(302).redirect(domain);
 });
+
+
+app.get('/login', (req, res) => {
+  const file = top + fs.readFileSync('./html/login.html', 'utf8') + bottom;
+  const template = handlebars.compile(file);
+  const data = {
+    pageTitle: 'Prisijungimas',
+    domain: domain,
+    nomenu: true,
+    message: getMessages(req),
+  };
+  const html = template(data);
+  res.send(html);
+});
+
+app.post('/login', (req, res) => {
+
+  if (req.query?.logout) {
+    addToSession(req, 'user', undefined);
+    addToSession(req, 'msg', 'logout_ok');
+    res.status(302).redirect(domain);
+    return;
+  }
+
+  let users = fs.readFileSync('./data/users.json', 'utf8');
+  users = JSON.parse(users);
+  const { name, psw } = req.body;
+  const pswhash = md5(psw);
+
+  const user = users.find(user => user.name === name && user.psw === pswhash);
+
+  if (!user) {
+    addToSession(req, 'msg', 'login_error');
+    res.status(401).redirect(domain + 'login');
+    return;
+  }
+
+  addToSession(req, 'user', user.name);
+  addToSession(req, 'msg', 'login_ok');
+  res.status(302).redirect(domain);
+
+});
+
+
 
 app.listen(port, () => {
   console.log(`Knygynas darbui pasiruošęs ant ${port} porto!`);
